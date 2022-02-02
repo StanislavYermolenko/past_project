@@ -1,0 +1,86 @@
+---
+- name: Docker test
+  hosts: all
+  become: yes
+
+  tasks:
+
+  - name: execute shell add repo
+    ansible.builtin.shell: sudo dnf config-manager --add-repo=https://download.docker.com/linux/centos/docker-ce.repo
+
+  - name: Install docker
+    ansible.builtin.dnf:
+      name: docker-ce
+      state: latest
+      update_cache: yes
+
+  # - name: Upgrade all packages        ##update takes ~1 hour
+  #   ansible.builtin.dnf:
+  #     name: "*"
+  #     state: latest
+
+  - name: Docker enable
+    ansible.builtin.systemd:
+      name: docker.service
+      state: started
+      enabled: yes
+      daemon_reload: yes
+
+  - name: execute shell curl docker-compose
+    ansible.builtin.shell: sudo curl -L "https://github.com/docker/compose/releases/download/1.29.2/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+
+  - name: execute shell symlink docker-compose /usr/bin/
+    ansible.builtin.shell: sudo ln -sfn /usr/local/bin/docker-compose /usr/bin/docker-compose
+
+  - name: Chmod docker-compose +x
+    file:
+      path: /usr/local/bin/docker-compose
+      mode: +x
+
+  - name: Install git
+    ansible.builtin.dnf:
+      name: git
+      state: latest
+
+  - name: Clone main branch rest-api
+    ansible.builtin.git:
+      repo: https://github.com/DevOps-Kv-116/rest-api
+      dest: /opt/projectIssues/rest-api
+      single_branch: yes
+      version: main
+    ignore_errors: yes
+
+  - name: Clone main branch rabbit-to-db
+    ansible.builtin.git:
+      repo: https://github.com/DevOps-Kv-116/rabbit-to-db
+      dest: /opt/projectIssues/rabbit-to-db
+      single_branch: yes
+      version: main
+    ignore_errors: yes
+
+  - name: Clone main branch rabbit_to_slack
+    ansible.builtin.git:
+      repo: https://github.com/DevOps-Kv-116/rabbit_to_slack
+      dest: /opt/projectIssues/rabbit_to_slack
+      single_branch: yes
+      version: main
+    ignore_errors: yes
+
+  - name: Clone main branch json-filter
+    ansible.builtin.git:
+      repo: https://github.com/DevOps-Kv-116/json-filter
+      dest: /opt/projectIssues/json-filter
+      single_branch: yes
+      version: main
+    ignore_errors: yes
+
+  - name: Clone main branch frontend
+    ansible.builtin.git:
+      repo: https://github.com/DevOps-Kv-116/frontend
+      dest: /opt/projectIssues/frontend
+      single_branch: yes
+      version: main
+    ignore_errors: yes
+
+  - name: execute shell docker-compose
+    ansible.builtin.shell: docker-compose -f /opt/projectIssues/docker-compose.yml up -d --build
